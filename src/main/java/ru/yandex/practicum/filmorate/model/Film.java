@@ -4,13 +4,12 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import ru.yandex.practicum.filmorate.annotation.AfterDate;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Film.
@@ -18,6 +17,7 @@ import java.time.LocalDate;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder(toBuilder = true)
 @EqualsAndHashCode(of = "id")
 public class Film {
     private Long id;
@@ -30,4 +30,11 @@ public class Film {
     private LocalDate releaseDate;
     @Positive
     private Integer duration;
+    @Builder.Default
+    @Builder.ObtainVia(method = "copyLikes")
+    private Set<Long> userLikeIds = new HashSet<>();
+
+    private Set<Long> copyLikes() {
+        return new HashSet<>(userLikeIds);
+    }
 }

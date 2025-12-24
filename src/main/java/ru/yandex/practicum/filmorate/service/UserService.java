@@ -1,52 +1,69 @@
 package ru.yandex.practicum.filmorate.service;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.IdNotSpecifiedException;
-import ru.yandex.practicum.filmorate.exception.NotFoundByIdException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
-@Slf4j
+@RequiredArgsConstructor
 @Service
 public class UserService {
-    private final Map<Long, User> storage = HashMap.newHashMap(100);
+    private final UserStorage userStorage;
 
     public User create(User user) {
-        Long nextId = getNextId();
-        user.setId(nextId);
-        if (user.getName() == null) {
-            user.setName(user.getLogin());
-        }
-        storage.put(nextId, user);
-        log.debug("Added user: {}", user);
-        return user;
+        return userStorage.create(user);
     }
 
     public Collection<User> findAll() {
-        return storage.values();
+        return userStorage.findAll();
+    }
+
+    public User findById(Long userId) {
+        return userStorage.findById(userId);
+    }
+
+    public void addFriend(Long userId, Long friendId) {
+        User user = findById(userId);
+        User friend = findById(friendId);
+        user.getFriendIds().add(friend.getId());
+        friend.getFriendIds().add(user.getId());
+        update(user);
+        update(friend);
+    }
+
+    public void deleteFriend(Long userId, Long friendId) {
+        User user = findById(userId);
+        User friend = findById(friendId);
+        user.getFriendIds().remove(friend.getId());
+        friend.getFriendIds().remove(user.getId());
+        update(user);
+        update(friend);
+    }
+
+    public Collection<User> getFriends(Long userId) {
+        return findById(userId).getFriendIds()
+                .stream()
+                .map(this::findById)
+                .toList();
+    }
+
+    public Collection<User> getCommonFriends(Long userId, Long otherId) {
+        User user = findById(userId);
+        User otherUser = findById(otherId);
+        return user.getFriendIds()
+                .stream()
+                .filter(otherUser.getFriendIds()::contains)
+                .map(this::findById)
+                .toList();
     }
 
     public User update(User user) {
-        if (user.getId() == null) {
-            throw new IdNotSpecifiedException();
-        }
-        if (!storage.containsKey(user.getId())) {
-            throw new NotFoundByIdException(user.getId());
-        }
-        User originUser = storage.put(user.getId(), user);
-        log.debug("Updated user: {} to {}", originUser, user);
-        return user;
+        return userStorage.update(user);
     }
 
-    private Long getNextId() {
-        long currentMaxId = storage.keySet().stream()
-                .mapToLong(Long::longValue)
-                .max()
-                .orElse(0L);
-        return ++currentMaxId;
+    public void delete(long userId) {
+        userStorage.delete(userId);
     }
 }

@@ -42,8 +42,8 @@ class UserControllerTest {
     @Test
     public void testFindAllSuccess() throws Exception {
         List<User> users = List.of(
-                new User(1L, "test1@example.com", "user123", "name123", LocalDate.of(2020, Month.DECEMBER, 8)),
-                new User(2L, "test2@example.com", "user234", "name234", LocalDate.of(2010, Month.OCTOBER, 7))
+                new User(1L, "test1@example.com", "user123", "name123", LocalDate.of(2020, Month.DECEMBER, 8), Collections.emptySet()),
+                new User(2L, "test2@example.com", "user234", "name234", LocalDate.of(2010, Month.OCTOBER, 7), Collections.emptySet())
         );
 
         when(userService.findAll()).thenReturn(users);
@@ -68,8 +68,8 @@ class UserControllerTest {
 
     @Test
     public void testCreateUserSuccess() throws Exception {
-        User user = new User(10L, "test1@example.com", "user123", "name123", LocalDate.of(2020, Month.DECEMBER, 8));
-        User returnUuser = new User(1L, "test1@example.com", "user123", "name123", LocalDate.of(2020, Month.DECEMBER, 8));
+        User user = new User(10L, "test1@example.com", "user123", "name123", LocalDate.of(2020, Month.DECEMBER, 8), Collections.emptySet());
+        User returnUuser = new User(1L, "test1@example.com", "user123", "name123", LocalDate.of(2020, Month.DECEMBER, 8), Collections.emptySet());
 
         when(userService.create(any(User.class))).thenReturn(returnUuser);
         mockMvc.perform(post("/users")
@@ -83,8 +83,8 @@ class UserControllerTest {
 
     @Test
     public void testUpdateUserSuccess() throws Exception {
-        User user = new User(1L, "test1@example.com", "user123", "name123", LocalDate.of(2020, Month.DECEMBER, 8));
-        User returnUuser = new User(1L, "test2@example.com", "user234", "name23", LocalDate.of(2010, Month.OCTOBER, 4));
+        User user = new User(1L, "test1@example.com", "user123", "name123", LocalDate.of(2020, Month.DECEMBER, 8), Collections.emptySet());
+        User returnUuser = new User(1L, "test2@example.com", "user234", "name23", LocalDate.of(2010, Month.OCTOBER, 4), Collections.emptySet());
 
         when(userService.update(any(User.class))).thenReturn(returnUuser);
         mockMvc.perform(put("/users")
@@ -98,7 +98,7 @@ class UserControllerTest {
 
     @Test
     public void testCreateUserWithoutEmailFail() throws Exception {
-        User user = new User(null, "", "user123", "name123", LocalDate.of(2020, Month.DECEMBER, 8));
+        User user = new User(null, "", "user123", "name123", LocalDate.of(2020, Month.DECEMBER, 8), Collections.emptySet());
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -110,7 +110,7 @@ class UserControllerTest {
 
     @Test
     public void testCreateUserWithoutLoginFail() throws Exception {
-        User user = new User(1L, "test1@example.com", "", "name123", LocalDate.of(2020, Month.DECEMBER, 8));
+        User user = new User(1L, "test1@example.com", "", "name123", LocalDate.of(2020, Month.DECEMBER, 8), Collections.emptySet());
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -122,7 +122,7 @@ class UserControllerTest {
 
     @Test
     public void testCreateUserWithWrongEmailFail() throws Exception {
-        User user = new User(1L, "test1.example.com", "efew", "name123", LocalDate.of(2020, Month.DECEMBER, 8));
+        User user = new User(1L, "test1.example.com", "efew", "name123", LocalDate.of(2020, Month.DECEMBER, 8), Collections.emptySet());
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)

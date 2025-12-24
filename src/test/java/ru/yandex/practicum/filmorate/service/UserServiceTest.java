@@ -4,17 +4,18 @@ import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.exception.IdNotSpecifiedException;
 import ru.yandex.practicum.filmorate.exception.NotFoundByIdException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.SequenceIdGenerator;
+import ru.yandex.practicum.filmorate.storage.impl.InMemoryUserStorage;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.*;
 
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 import static org.junit.jupiter.api.Assertions.*;
 
 class UserServiceTest {
     LocalDate correctDate = LocalDate.parse("1990-01-01", ISO_LOCAL_DATE);
-    UserService userService = new UserService();
+    UserService userService = new UserService(new InMemoryUserStorage(new SequenceIdGenerator()));
 
     @Test
     public void createUserSuccess() {
@@ -31,6 +32,7 @@ class UserServiceTest {
         assertEquals(user.getName(), actual.getName(), "Имя");
         assertEquals(user.getLogin(), actual.getLogin(), "Логин");
         assertEquals(user.getBirthday(), actual.getBirthday(), "Дата рождения");
+        assertEquals(0, user.getFriendIds().size(), "Друзья");
     }
 
     @Test
@@ -76,9 +78,9 @@ class UserServiceTest {
 
     @Test
     public void getAllUserSuccess() {
-        User firstUser = new User(1L, "test1@example.com", "user123", "name123", correctDate);
-        User secondUser = new User(1L, "test2@example.com", "user234", "name234", correctDate);
-        User thirdUser = new User(1L, "test3@example.com", "user345", "name345", correctDate);
+        User firstUser = new User(1L, "test1@example.com", "user123", "name123", correctDate, Collections.emptySet());
+        User secondUser = new User(1L, "test2@example.com", "user234", "name234", correctDate, Collections.emptySet());
+        User thirdUser = new User(1L, "test3@example.com", "user345", "name345", correctDate, Collections.emptySet());
 
         userService.create(firstUser);
         userService.create(secondUser);
@@ -107,10 +109,10 @@ class UserServiceTest {
 
     @Test
     public void updateUserSuccess() {
-        User originUser = new User(1L, "test1@example.com", "user123", "name123", correctDate);
+        User originUser = new User(1L, "test1@example.com", "user123", "name123", correctDate, Collections.emptySet());
         User savedUser = userService.create(originUser);
 
-        User updateUser = new User(savedUser.getId(), "test2@example.com", "user234", "name234", correctDate);
+        User updateUser = new User(savedUser.getId(), "test2@example.com", "user234", "name234", correctDate, Collections.emptySet());
         userService.update(updateUser);
 
         Collection<User> actual = userService.findAll();
@@ -126,19 +128,145 @@ class UserServiceTest {
 
     @Test
     public void updateUserThrowExceptionWhenIdNull() {
-        User originUser = new User(1L, "test1@example.com", "user123", "name123", correctDate);
+        User originUser = new User(1L, "test1@example.com", "user123", "name123", correctDate, Collections.emptySet());
         userService.create(originUser);
 
-        User updateUser = new User(null, "test2@example.com", "user234", "name234", correctDate);
+        User updateUser = new User(null, "test2@example.com", "user234", "name234", correctDate, Collections.emptySet());
         assertThrows(IdNotSpecifiedException.class, () -> userService.update(updateUser));
     }
 
     @Test
     public void updateUserThrowExceptionWhenIdNotFound() {
-        User originUser = new User(1L, "test1@example.com", "user123", "name123", correctDate);
+        User originUser = new User(1L, "test1@example.com", "user123", "name123", correctDate, Collections.emptySet());
         userService.create(originUser);
 
-        User updateUser = new User(999L, "test2@example.com", "user234", "name234", correctDate);
+        User updateUser = new User(999L, "test2@example.com", "user234", "name234", correctDate, Collections.emptySet());
         assertThrows(NotFoundByIdException.class, () -> userService.update(updateUser));
+    }
+
+    @Test
+    public void getUserByIdSuccess() {
+        User firstUser = new User(1L, "test1@example.com", "user123", "name123", correctDate, Collections.emptySet());
+        User secondUser = new User(1L, "test2@example.com", "user234", "name234", correctDate, Collections.emptySet());
+        User thirdUser = new User(1L, "test3@example.com", "user345", "name345", correctDate, Collections.emptySet());
+
+        userService.create(firstUser);
+        userService.create(secondUser);
+        userService.create(thirdUser);
+
+        User userById = userService.findById(2L);
+
+        assertEquals(secondUser.getId(), userById.getId(), "ID второго пользователя");
+        assertEquals(secondUser.getEmail(), userById.getEmail(), "Email второго пользователя");
+        assertEquals(secondUser.getName(), userById.getName(), "Имя второго пользователя");
+        assertEquals(secondUser.getLogin(), userById.getLogin(), "Логин второго пользователя");
+        assertEquals(secondUser.getBirthday(), userById.getBirthday(), "Дата рождения второго пользователя");
+    }
+
+    @Test
+    public void addFriendSuccess() {
+        User firstUser = new User(1L, "test1@example.com", "user123", "name123", correctDate, new HashSet<>());
+        User secondUser = new User(1L, "test2@example.com", "user234", "name234", correctDate, new HashSet<>());
+        User thirdUser = new User(1L, "test3@example.com", "user345", "name345", correctDate, new HashSet<>());
+
+        userService.create(firstUser);
+        userService.create(secondUser);
+        userService.create(thirdUser);
+
+        userService.addFriend(secondUser.getId(), thirdUser.getId());
+        secondUser = userService.findById(secondUser.getId());
+        thirdUser = userService.findById(thirdUser.getId());
+
+        assertIterableEquals(List.of(thirdUser.getId()), secondUser.getFriendIds(), "Друзья второго пользователя");
+        assertIterableEquals(List.of(secondUser.getId()), thirdUser.getFriendIds(), "Друзья третьего пользователя");
+        assertEquals(0, firstUser.getFriendIds().size(), "Друзья первого пользователя");
+    }
+
+    @Test
+    public void shouldNothingToChangeWhenRepeatedAddFriend() {
+        User firstUser = new User(1L, "test1@example.com", "user123", "name123", correctDate, new HashSet<>());
+        User secondUser = new User(1L, "test2@example.com", "user234", "name234", correctDate, new HashSet<>());
+        User thirdUser = new User(1L, "test3@example.com", "user345", "name345", correctDate, new HashSet<>());
+
+        userService.create(firstUser);
+        userService.create(secondUser);
+        userService.create(thirdUser);
+
+        userService.addFriend(secondUser.getId(), thirdUser.getId());
+        userService.addFriend(thirdUser.getId(), secondUser.getId());
+        secondUser = userService.findById(secondUser.getId());
+        thirdUser = userService.findById(thirdUser.getId());
+
+        assertIterableEquals(List.of(thirdUser.getId()), secondUser.getFriendIds(), "Друзья второго пользователя");
+        assertIterableEquals(List.of(secondUser.getId()), thirdUser.getFriendIds(), "Друзья третьего пользователя");
+        assertEquals(0, firstUser.getFriendIds().size(), "Друзья первого пользователя");
+    }
+
+    @Test
+    public void deleteFriendSuccess() {
+        User firstUser = new User(1L, "test1@example.com", "user123", "name123", correctDate, new HashSet<>());
+        User secondUser = new User(1L, "test2@example.com", "user234", "name234", correctDate, new HashSet<>());
+        User thirdUser = new User(1L, "test3@example.com", "user345", "name345", correctDate, new HashSet<>());
+
+        userService.create(firstUser);
+        userService.create(secondUser);
+        userService.create(thirdUser);
+
+        userService.addFriend(secondUser.getId(), thirdUser.getId());
+        userService.deleteFriend(thirdUser.getId(), secondUser.getId());
+
+        assertEquals(0, secondUser.getFriendIds().size(), "Друзья второго пользователя");
+        assertEquals(0, thirdUser.getFriendIds().size(), "Друзья третьего пользователя");
+        assertEquals(0, firstUser.getFriendIds().size(), "Друзья первого пользователя");
+    }
+
+    @Test
+    public void getCommonFriendSuccess() {
+        User firstUser = new User(1L, "test1@example.com", "user123", "name123", correctDate, new HashSet<>());
+        User secondUser = new User(1L, "test2@example.com", "user234", "name234", correctDate, new HashSet<>());
+        User thirdUser = new User(1L, "test3@example.com", "user345", "name345", correctDate, new HashSet<>());
+
+        userService.create(firstUser);
+        userService.create(secondUser);
+        userService.create(thirdUser);
+
+        userService.addFriend(secondUser.getId(), thirdUser.getId());
+        userService.addFriend(thirdUser.getId(), firstUser.getId());
+
+        Collection<User> commonFriends = userService.getCommonFriends(secondUser.getId(), firstUser.getId());
+        assertIterableEquals(List.of(thirdUser), commonFriends, "Список общих друзей");
+    }
+
+    @Test
+    public void getFriendsSuccess() {
+        User firstUser = new User(1L, "test1@example.com", "user123", "name123", correctDate, new HashSet<>());
+        User secondUser = new User(1L, "test2@example.com", "user234", "name234", correctDate, new HashSet<>());
+        User thirdUser = new User(1L, "test3@example.com", "user345", "name345", correctDate, new HashSet<>());
+
+        userService.create(firstUser);
+        userService.create(secondUser);
+        userService.create(thirdUser);
+
+        userService.addFriend(secondUser.getId(), thirdUser.getId());
+        userService.addFriend(secondUser.getId(), firstUser.getId());
+
+        Collection<User> actualFriends = userService.getFriends(secondUser.getId());
+        assertIterableEquals(List.of(firstUser, thirdUser), actualFriends, "Список друзей");
+    }
+
+    @Test
+    public void deleteUserSuccess() {
+        User firstUser = new User(1L, "test1@example.com", "user123", "name123", correctDate, new HashSet<>());
+        User secondUser = new User(1L, "test2@example.com", "user234", "name234", correctDate, new HashSet<>());
+        User thirdUser = new User(1L, "test3@example.com", "user345", "name345", correctDate, new HashSet<>());
+
+        userService.create(firstUser);
+        userService.create(secondUser);
+        userService.create(thirdUser);
+
+        userService.delete(secondUser.getId());
+        Collection<User> actualUsers = userService.findAll();
+
+        assertIterableEquals(List.of(firstUser, thirdUser), actualUsers, "Список пользователей");
     }
 }
