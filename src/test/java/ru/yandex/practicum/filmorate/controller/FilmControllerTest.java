@@ -54,8 +54,8 @@ class FilmControllerTest {
     @Test
     public void testFindAllSuccess() throws Exception {
         List<Film> films = List.of(
-                new Film(1L, "name123", "desc123", correctDate, 20),
-                new Film(2L, "name234", "desc234", correctDate, 10)
+                new Film(1L, "name123", "desc123", correctDate, 20, Collections.emptySet()),
+                new Film(2L, "name234", "desc234", correctDate, 10, Collections.emptySet())
         );
 
         when(filmService.findAll()).thenReturn(films);
@@ -70,8 +70,8 @@ class FilmControllerTest {
 
     @Test
     public void testCreateFilmSuccess() throws Exception {
-        Film firstFilm = new Film(21L, "name123", "desc123", correctDate, 20);
-        Film returnFilm = new Film(1L, "name123", "desc123", correctDate, 20);
+        Film firstFilm = new Film(21L, "name123", "desc123", correctDate, 20, Collections.emptySet());
+        Film returnFilm = new Film(1L, "name123", "desc123", correctDate, 20, Collections.emptySet());
 
         when(filmService.create(any(Film.class))).thenReturn(returnFilm);
         mockMvc.perform(post("/films")
@@ -85,8 +85,8 @@ class FilmControllerTest {
 
     @Test
     public void testUpdateFilmSuccess() throws Exception {
-        Film firstFilm = new Film(1L, "name123", "desc123", correctDate, 20);
-        Film returnFilm = new Film(1L, "name234", "desc234", correctDate, 10);
+        Film firstFilm = new Film(1L, "name123", "desc123", correctDate, 20, Collections.emptySet());
+        Film returnFilm = new Film(1L, "name234", "desc234", correctDate, 10, Collections.emptySet());
 
         when(filmService.update(any(Film.class))).thenReturn(returnFilm);
         mockMvc.perform(put("/films")
@@ -100,7 +100,7 @@ class FilmControllerTest {
 
     @Test
     public void testCreateFilmWithoutNameFail() throws Exception {
-        Film film = new Film(1L, "", "desc123", correctDate, 20);
+        Film film = new Film(1L, "", "desc123", correctDate, 20, Collections.emptySet());
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -112,7 +112,7 @@ class FilmControllerTest {
 
     @Test
     public void testCreateFilmWithDescriptionLength201Fail() throws Exception {
-        Film film = new Film(1L, "name123", "a".repeat(201), correctDate, 20);
+        Film film = new Film(1L, "name123", "a".repeat(201), correctDate, 20, Collections.emptySet());
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -124,7 +124,7 @@ class FilmControllerTest {
 
     @Test
     public void testCreateFilmWithDescriptionLength200Success() throws Exception {
-        Film film = new Film(1L, "name123", "a".repeat(200), correctDate, 20);
+        Film film = new Film(1L, "name123", "a".repeat(200), correctDate, 20, Collections.emptySet());
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)

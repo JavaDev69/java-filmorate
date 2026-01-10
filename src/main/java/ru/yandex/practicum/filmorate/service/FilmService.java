@@ -1,49 +1,61 @@
 package ru.yandex.practicum.filmorate.service;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.IdNotSpecifiedException;
-import ru.yandex.practicum.filmorate.exception.NotFoundByIdException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.FilmStorage;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Comparator;
 
-@Slf4j
+@RequiredArgsConstructor
 @Service
 public class FilmService {
-    private final Map<Long, Film> storage = HashMap.newHashMap(100);
+    Comparator<Film> popularComparator = Comparator.comparingInt(o -> o.getUserLikeIds().size());
+    private final FilmStorage filmStorage;
+    private final UserService userService;
 
     public Film create(Film film) {
-        Long nextId = getNextId();
-        film.setId(nextId);
-        storage.put(nextId, film);
-        log.debug("Added film: {}", film);
-        return film;
+        return filmStorage.create(film);
     }
 
     public Collection<Film> findAll() {
-        return storage.values();
+        return filmStorage.findAll();
+    }
+
+    public Film findById(Long filmId) {
+        return filmStorage.findById(filmId);
     }
 
     public Film update(Film film) {
-        if (film.getId() == null) {
-            throw new IdNotSpecifiedException();
-        }
-        if (!storage.containsKey(film.getId())) {
-            throw new NotFoundByIdException(film.getId());
-        }
-        Film originFilm = storage.put(film.getId(), film);
-        log.debug("Updated film: {} to {}", originFilm, film);
-        return film;
+        return filmStorage.update(film);
     }
 
-    private Long getNextId() {
-        long currentMaxId = storage.keySet().stream()
-                .mapToLong(Long::longValue)
-                .max()
-                .orElse(0L);
-        return ++currentMaxId;
+    public void delete(long filmId) {
+        filmStorage.delete(filmId);
+    }
+
+    public void addLike(Long filmId, Long userId) {
+        User user = userService.findById(userId);
+        Film film = filmStorage.findById(filmId);
+        film.getUserLikeIds().add(user.getId());
+        update(film);
+    }
+
+    public void deleteLike(Long filmId, Long userId) {
+        User user = userService.findById(userId);
+        Film film = filmStorage.findById(filmId);
+        film.getUserLikeIds().remove(user.getId());
+        update(film);
+
+    }
+
+    public Collection<Film> findPopular(int count) {
+        return findAll()
+                .stream()
+                .sorted(popularComparator.reversed())
+                .limit(count)
+                .toList();
     }
 }

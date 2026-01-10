@@ -4,17 +4,20 @@ import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.exception.IdNotSpecifiedException;
 import ru.yandex.practicum.filmorate.exception.NotFoundByIdException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.SequenceIdGenerator;
+import ru.yandex.practicum.filmorate.storage.impl.InMemoryFilmStorage;
+import ru.yandex.practicum.filmorate.storage.impl.InMemoryUserStorage;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collection;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class FilmServiceTest {
     LocalDate correctDate = LocalDate.of(2020, Calendar.DECEMBER, 8);
-    FilmService filmService = new FilmService();
+    UserService userService = new UserService(new InMemoryUserStorage(new SequenceIdGenerator()));
+    FilmService filmService = new FilmService(new InMemoryFilmStorage(new SequenceIdGenerator()), userService);
 
     @Test
     public void createFilmSuccess() {
@@ -60,8 +63,8 @@ class FilmServiceTest {
 
     @Test
     public void getAllFilmsSuccess() {
-        Film firstFilm = new Film(1L, "name123", "desc123", correctDate, 20);
-        Film secondFilm = new Film(1L, "name234", "desc234", correctDate, 10);
+        Film firstFilm = new Film(1L, "name123", "desc123", correctDate, 20, Collections.emptySet());
+        Film secondFilm = new Film(1L, "name234", "desc234", correctDate, 10, Collections.emptySet());
 
         filmService.create(firstFilm);
         filmService.create(secondFilm);
@@ -84,10 +87,10 @@ class FilmServiceTest {
 
     @Test
     public void updateFilmSuccess() {
-        Film originFilm = new Film(1L, "name123", "desc123", correctDate, 20);
+        Film originFilm = new Film(1L, "name123", "desc123", correctDate, 20, Collections.emptySet());
         Film savedFilm = filmService.create(originFilm);
 
-        Film updateFilm = new Film(savedFilm.getId(), "name234", "desc234", correctDate, 10);
+        Film updateFilm = new Film(savedFilm.getId(), "name234", "desc234", correctDate, 10, Collections.emptySet());
         filmService.update(updateFilm);
 
         Collection<Film> actual = filmService.findAll();
@@ -103,19 +106,164 @@ class FilmServiceTest {
 
     @Test
     public void updateFilmThrowExceptionWhenIdNull() {
-        Film originFilm = new Film(1L, "name123", "desc123", correctDate, 20);
+        Film originFilm = new Film(1L, "name123", "desc123", correctDate, 20, Collections.emptySet());
         filmService.create(originFilm);
 
-        Film updateFilm = new Film(null, "name234", "desc234", correctDate, 10);
+        Film updateFilm = new Film(null, "name234", "desc234", correctDate, 10, Collections.emptySet());
         assertThrows(IdNotSpecifiedException.class, () -> filmService.update(updateFilm));
     }
 
     @Test
     public void updateFilmThrowExceptionWhenIdNotFound() {
-        Film originFilm = new Film(1L, "name123", "desc123", correctDate, 20);
+        Film originFilm = new Film(1L, "name123", "desc123", correctDate, 20, Collections.emptySet());
         filmService.create(originFilm);
 
-        Film updateFilm = new Film(45L, "name234", "desc234", correctDate, 10);
+        Film updateFilm = new Film(45L, "name234", "desc234", correctDate, 10, Collections.emptySet());
         assertThrows(NotFoundByIdException.class, () -> filmService.update(updateFilm));
+    }
+
+    @Test
+    public void deleteFilmSuccess() {
+        Film firstFilm = new Film(1L, "name123", "desc123", correctDate, 20, Collections.emptySet());
+        Film secondFilm = new Film(1L, "name234", "desc234", correctDate, 10, Collections.emptySet());
+
+        filmService.create(firstFilm);
+        filmService.create(secondFilm);
+        filmService.delete(firstFilm.getId());
+
+        Collection<Film> actual = filmService.findAll();
+
+        assertIterableEquals(List.of(secondFilm), actual, "Количество фильмов");
+    }
+
+    @Test
+    public void getFilmByIdSuccess() {
+        Film firstFilm = new Film(1L, "name123", "desc123", correctDate, 20, Collections.emptySet());
+        Film secondFilm = new Film(1L, "name234", "desc234", correctDate, 10, Collections.emptySet());
+
+        filmService.create(firstFilm);
+        filmService.create(secondFilm);
+        Film filmById = filmService.findById(2L);
+
+        assertEquals(secondFilm.getId(), filmById.getId(), "ID");
+        assertEquals(secondFilm.getName(), filmById.getName(), "Название");
+        assertEquals(secondFilm.getDescription(), filmById.getDescription(), "Описание");
+        assertEquals(secondFilm.getReleaseDate(), filmById.getReleaseDate(), "Дата релиза");
+        assertEquals(secondFilm.getDuration(), filmById.getDuration(), "Продолжительность");
+        assertEquals(0, filmById.getUserLikeIds().size(), "Количество лайков");
+    }
+
+    @Test
+    public void addLikeSuccess() {
+        Film firstFilm = new Film(1L, "name123", "desc123", correctDate, 20, Collections.emptySet());
+        Film secondFilm = new Film(1L, "name234", "desc234", correctDate, 10, Collections.emptySet());
+        User firstUser = new User(1L, "test1@example.com", "user123", "name123", correctDate, new HashSet<>());
+
+        filmService.create(firstFilm);
+        filmService.create(secondFilm);
+        userService.create(firstUser);
+
+        filmService.addLike(firstFilm.getId(), firstUser.getId());
+
+        Film actual = filmService.findById(firstFilm.getId());
+
+        assertIterableEquals(List.of(firstUser.getId()), actual.getUserLikeIds(), "Количество лайков");
+    }
+
+    @Test
+    public void repeatAddLikeSuccess() {
+        Film firstFilm = new Film(1L, "name123", "desc123", correctDate, 20, Collections.emptySet());
+        Film secondFilm = new Film(1L, "name234", "desc234", correctDate, 10, Collections.emptySet());
+        User firstUser = new User(1L, "test1@example.com", "user123", "name123", correctDate, new HashSet<>());
+
+        filmService.create(firstFilm);
+        filmService.create(secondFilm);
+        userService.create(firstUser);
+
+        filmService.addLike(firstFilm.getId(), firstUser.getId());
+        filmService.addLike(firstFilm.getId(), firstUser.getId());
+
+        Film actual = filmService.findById(firstFilm.getId());
+
+        assertIterableEquals(List.of(firstUser.getId()), actual.getUserLikeIds(), "Количество лайков");
+    }
+
+    @Test
+    public void deleteLikeSuccess() {
+        Film firstFilm = new Film(1L, "name123", "desc123", correctDate, 20, Collections.emptySet());
+        User firstUser = new User(1L, "test1@example.com", "user123", "name123", correctDate, new HashSet<>());
+
+        filmService.create(firstFilm);
+        userService.create(firstUser);
+
+        filmService.addLike(firstFilm.getId(), firstUser.getId());
+        filmService.deleteLike(firstFilm.getId(), firstUser.getId());
+
+        Film actual = filmService.findById(firstFilm.getId());
+
+        assertEquals(0, actual.getUserLikeIds().size(), "Количество лайков");
+    }
+
+    @Test
+    public void findPopularSuccess() {
+        Film firstFilm = new Film(1L, "name123", "desc123", correctDate, 20, Collections.emptySet());
+        Film secondFilm = new Film(1L, "name234", "desc234", correctDate, 10, Collections.emptySet());
+        Film thirdFilm = new Film(1L, "name345", "desc345", correctDate, 101, Collections.emptySet());
+        User firstUser = new User(1L, "test1@example.com", "user123", "name123", correctDate, new HashSet<>());
+        User secondUser = new User(1L, "test2@example.com", "user234", "name234", correctDate, Collections.emptySet());
+
+        filmService.create(firstFilm);
+        filmService.create(secondFilm);
+        filmService.create(thirdFilm);
+
+        userService.create(firstUser);
+        userService.create(secondUser);
+
+        filmService.addLike(thirdFilm.getId(), firstUser.getId());
+        filmService.addLike(secondFilm.getId(), firstUser.getId());
+        filmService.addLike(secondFilm.getId(), secondFilm.getId());
+
+        Collection<Film> actual = filmService.findPopular(5);
+
+        assertIterableEquals(List.of(secondFilm, thirdFilm, firstFilm), actual, "Порядок фильмов и количество");
+    }
+
+    @Test
+    public void findPopularWhenCountTwoSuccess() {
+        Film firstFilm = new Film(1L, "name123", "desc123", correctDate, 20, Collections.emptySet());
+        Film secondFilm = new Film(1L, "name234", "desc234", correctDate, 10, Collections.emptySet());
+        Film thirdFilm = new Film(1L, "name345", "desc345", correctDate, 101, Collections.emptySet());
+        User firstUser = new User(1L, "test1@example.com", "user123", "name123", correctDate, new HashSet<>());
+        User secondUser = new User(1L, "test2@example.com", "user234", "name234", correctDate, Collections.emptySet());
+
+        filmService.create(firstFilm);
+        filmService.create(secondFilm);
+        filmService.create(thirdFilm);
+
+        userService.create(firstUser);
+        userService.create(secondUser);
+
+        filmService.addLike(thirdFilm.getId(), firstUser.getId());
+        filmService.addLike(secondFilm.getId(), firstUser.getId());
+        filmService.addLike(secondFilm.getId(), secondFilm.getId());
+
+        Collection<Film> actual = filmService.findPopular(2);
+
+        assertIterableEquals(List.of(secondFilm, thirdFilm), actual, "Порядок фильмов и количество");
+    }
+
+    @Test
+    public void findPopularWhenNotLikesSuccess() {
+        Film firstFilm = new Film(1L, "name123", "desc123", correctDate, 20, Collections.emptySet());
+        Film secondFilm = new Film(1L, "name234", "desc234", correctDate, 10, Collections.emptySet());
+        Film thirdFilm = new Film(1L, "name345", "desc345", correctDate, 101, Collections.emptySet());
+
+        filmService.create(firstFilm);
+        filmService.create(secondFilm);
+        filmService.create(thirdFilm);
+
+        Collection<Film> actual = filmService.findPopular(3);
+
+        assertIterableEquals(List.of(firstFilm, secondFilm, thirdFilm), actual, "Порядок фильмов и количество");
     }
 }
