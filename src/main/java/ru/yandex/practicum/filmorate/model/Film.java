@@ -30,11 +30,19 @@ public class Film {
     private LocalDate releaseDate;
     @Positive
     private Integer duration;
+    private Rating mpa;
     @Builder.Default
     @Builder.ObtainVia(method = "copyLikes")
     private Set<Long> userLikeIds = new HashSet<>();
+    @Builder.Default
+    @Builder.ObtainVia(method = "copyGenres")
+    private Set<Long> genres = new HashSet<>();
 
     private Set<Long> copyLikes() {
         return new HashSet<>(userLikeIds);
+    }
+
+    private Set<Long> copyGenres() {
+        return new HashSet<>(genres);
     }
 }
