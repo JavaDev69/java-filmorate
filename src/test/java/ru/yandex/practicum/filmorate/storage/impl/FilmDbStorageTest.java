@@ -89,7 +89,7 @@ class FilmDbStorageTest {
         Film created = filmStorage.create(testFilm);
         Long id = created.getId();
         filmStorage.delete(id);
-        
+
         assertThrows(NotFoundByIdException.class, () -> filmStorage.findById(id), "Фильм успешно удален");
 
     }
