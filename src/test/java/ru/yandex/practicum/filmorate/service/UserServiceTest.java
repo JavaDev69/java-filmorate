@@ -174,6 +174,7 @@ class UserServiceTest {
         userService.create(thirdUser);
 
         userService.addFriend(secondUser.getId(), thirdUser.getId());
+        userService.addFriend(thirdUser.getId(), secondUser.getId());
         secondUser = userService.findById(secondUser.getId());
         thirdUser = userService.findById(thirdUser.getId());
 
@@ -232,6 +233,8 @@ class UserServiceTest {
 
         userService.addFriend(secondUser.getId(), thirdUser.getId());
         userService.addFriend(thirdUser.getId(), firstUser.getId());
+        userService.addFriend(firstUser.getId(), thirdUser.getId());
+        userService.addFriend(thirdUser.getId(), secondUser.getId());
 
         Collection<User> commonFriends = userService.getCommonFriends(secondUser.getId(), firstUser.getId());
         assertIterableEquals(List.of(thirdUser), commonFriends, "Список общих друзей");

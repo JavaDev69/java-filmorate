@@ -30,7 +30,7 @@ public class Film {
     private LocalDate releaseDate;
     @Positive
     private Integer duration;
-    private Rating mpa;
+    private Long mpaId;
     @Builder.Default
     @Builder.ObtainVia(method = "copyLikes")
     private Set<Long> userLikeIds = new HashSet<>();

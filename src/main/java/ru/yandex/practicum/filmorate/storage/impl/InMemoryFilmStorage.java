@@ -15,7 +15,7 @@ import java.util.Map;
 
 @Slf4j
 @RequiredArgsConstructor
-@Component
+@Component("inMemoryFilmStorage")
 public class InMemoryFilmStorage implements FilmStorage {
     private final Map<Long, Film> storage = HashMap.newHashMap(100);
     private final SequenceIdGenerator idGenerator;

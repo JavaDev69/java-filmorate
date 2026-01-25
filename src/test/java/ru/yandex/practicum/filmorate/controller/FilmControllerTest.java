@@ -5,12 +5,13 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.dto.FilmDto;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
 import java.time.LocalDate;
@@ -23,6 +24,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
+@AutoConfigureTestDatabase
 @AutoConfigureMockMvc
 class FilmControllerTest {
     @Autowired
@@ -53,9 +55,9 @@ class FilmControllerTest {
 
     @Test
     public void testFindAllSuccess() throws Exception {
-        List<Film> films = List.of(
-                new Film(1L, "name123", "desc123", correctDate, 20, Collections.emptySet()),
-                new Film(2L, "name234", "desc234", correctDate, 10, Collections.emptySet())
+        List<FilmDto> films = List.of(
+                new FilmDto(1L, "name123", "desc123", correctDate, 20, null, Collections.emptyList(), Collections.emptyList()),
+                new FilmDto(2L, "name234", "desc234", correctDate, 10, null, Collections.emptyList(), Collections.emptyList())
         );
 
         when(filmService.findAll()).thenReturn(films);
@@ -70,67 +72,67 @@ class FilmControllerTest {
 
     @Test
     public void testCreateFilmSuccess() throws Exception {
-        Film firstFilm = new Film(21L, "name123", "desc123", correctDate, 20, Collections.emptySet());
-        Film returnFilm = new Film(1L, "name123", "desc123", correctDate, 20, Collections.emptySet());
+        FilmDto firstFilm = new FilmDto(21L, "name123", "desc123", correctDate, 20, null, Collections.emptyList(), Collections.emptyList());
+        FilmDto returnFilm = new FilmDto(1L, "name123", "desc123", correctDate, 20, null, Collections.emptyList(), Collections.emptyList());
 
-        when(filmService.create(any(Film.class))).thenReturn(returnFilm);
+        when(filmService.create(any(FilmDto.class))).thenReturn(returnFilm);
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsBytes(firstFilm)))
                 .andExpect(status().isCreated())
                 .andExpect(content().string(mapper.writeValueAsString(returnFilm)));
 
-        verify(filmService, times(1)).create(any(Film.class));
+        verify(filmService, times(1)).create(any(FilmDto.class));
     }
 
     @Test
     public void testUpdateFilmSuccess() throws Exception {
-        Film firstFilm = new Film(1L, "name123", "desc123", correctDate, 20, Collections.emptySet());
-        Film returnFilm = new Film(1L, "name234", "desc234", correctDate, 10, Collections.emptySet());
+        FilmDto firstFilm = new FilmDto(1L, "name123", "desc123", correctDate, 20, null, Collections.emptyList(), Collections.emptyList());
+        FilmDto returnFilm = new FilmDto(1L, "name234", "desc234", correctDate, 10, null, Collections.emptyList(), Collections.emptyList());
 
-        when(filmService.update(any(Film.class))).thenReturn(returnFilm);
+        when(filmService.update(any(FilmDto.class))).thenReturn(returnFilm);
         mockMvc.perform(put("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsBytes(firstFilm)))
                 .andExpect(status().isOk())
                 .andExpect(content().string(mapper.writeValueAsString(returnFilm)));
 
-        verify(filmService, times(1)).update(any(Film.class));
+        verify(filmService, times(1)).update(any(FilmDto.class));
     }
 
     @Test
     public void testCreateFilmWithoutNameFail() throws Exception {
-        Film film = new Film(1L, "", "desc123", correctDate, 20, Collections.emptySet());
+        FilmDto film = new FilmDto(1L, "", "desc123", correctDate, 20, null, Collections.emptyList(), Collections.emptyList());
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsBytes(film)))
                 .andExpect(status().isBadRequest());
 
-        verify(filmService, times(0)).create(any(Film.class));
+        verify(filmService, times(0)).create(any(FilmDto.class));
     }
 
     @Test
     public void testCreateFilmWithDescriptionLength201Fail() throws Exception {
-        Film film = new Film(1L, "name123", "a".repeat(201), correctDate, 20, Collections.emptySet());
+        FilmDto film = new FilmDto(1L, "name123", "a".repeat(201), correctDate, 20, null, Collections.emptyList(), Collections.emptyList());
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsBytes(film)))
                 .andExpect(status().isBadRequest());
 
-        verify(filmService, times(0)).create(any(Film.class));
+        verify(filmService, times(0)).create(any(FilmDto.class));
     }
 
     @Test
     public void testCreateFilmWithDescriptionLength200Success() throws Exception {
-        Film film = new Film(1L, "name123", "a".repeat(200), correctDate, 20, Collections.emptySet());
+        FilmDto film = new FilmDto(1L, "name123", "a".repeat(200), correctDate, 20, null, Collections.emptyList(), Collections.emptyList());
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsBytes(film)))
                 .andExpect(status().isCreated());
 
-        verify(filmService, times(1)).create(any(Film.class));
+        verify(filmService, times(1)).create(any(FilmDto.class));
     }
 }
