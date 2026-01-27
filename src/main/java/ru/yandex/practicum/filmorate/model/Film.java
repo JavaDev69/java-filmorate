@@ -36,13 +36,13 @@ public class Film {
     private Set<Long> userLikeIds = new HashSet<>();
     @Builder.Default
     @Builder.ObtainVia(method = "copyGenres")
-    private Set<Long> genres = new HashSet<>();
+    private Set<Genre> genres = new HashSet<>();
 
     private Set<Long> copyLikes() {
         return new HashSet<>(userLikeIds);
     }
 
-    private Set<Long> copyGenres() {
+    private Set<Genre> copyGenres() {
         return new HashSet<>(genres);
     }
 }

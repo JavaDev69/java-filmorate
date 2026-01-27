@@ -1,39 +1,28 @@
 package ru.yandex.practicum.filmorate.mapper;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import org.mapstruct.*;
 import ru.yandex.practicum.filmorate.dto.FilmDto;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Rating;
 
-import java.util.ArrayList;
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
+        unmappedTargetPolicy = ReportingPolicy.IGNORE)
+public interface FilmMapper {
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class FilmMapper {
-    public static Film mapToFilm(FilmDto filmDto) {
-        Film film = new Film();
-        film.setId(filmDto.getId());
-        film.setName(filmDto.getName());
-        film.setDescription(filmDto.getDescription());
-        film.setReleaseDate(filmDto.getReleaseDate());
-        film.setDuration(filmDto.getDuration());
-        if (filmDto.getMpa() != null) {
-            film.setMpaId(filmDto.getMpa().getId());
-        }
-        return film;
+    @Mapping(target = "mpaId", qualifiedByName = "getMpaIdFromFilmDto", source = "mpa")
+    Film map(FilmDto filmDto);
+
+    @Mapping(target = "mpa", qualifiedByName = "getMpaFromFilm", source = "mpaId")
+    @Mapping(target = "likes", source = "userLikeIds")
+    FilmDto map(Film film);
+
+    @Named("getMpaIdFromFilmDto")
+    default Long getMpaIdFromFilmDto(Rating rating) {
+        return rating == null ? null : rating.getId();
     }
 
-    public static FilmDto mapToDto(Film film) {
-        FilmDto dto = new FilmDto();
-        dto.setId(film.getId());
-        dto.setName(film.getName());
-        dto.setDescription(film.getDescription());
-        dto.setReleaseDate(film.getReleaseDate());
-        dto.setDuration(film.getDuration());
-        dto.setLikes(new ArrayList<>(film.getUserLikeIds()));
-        if (film.getMpaId() != null) {
-            dto.setMpa(new Rating(film.getMpaId(), null, null));
-        }
-        return dto;
+    @Named("getMpaFromFilm")
+    default Rating getMpaFromFilm(Long mpaId) {
+        return mpaId == null ? null : new Rating(mpaId, null, null);
     }
 }

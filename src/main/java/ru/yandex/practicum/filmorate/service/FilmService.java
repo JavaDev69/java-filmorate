@@ -32,9 +32,10 @@ public class FilmService {
 
     private final UserService userService;
     private final RatingService ratingService;
+    private final FilmMapper filmMapper;
 
     public FilmDto create(FilmDto newFilm) {
-        Film film = FilmMapper.mapToFilm(newFilm);
+        Film film = filmMapper.map(newFilm);
 
         if (newFilm.getMpa() != null) {
             Rating mpa = ratingService.findById(newFilm.getMpa().getId());
@@ -42,10 +43,9 @@ public class FilmService {
         }
 
         if (newFilm.getGenres() != null) {
-            Set<Long> genres = newFilm.getGenres().stream()
+            Set<Genre> genres = newFilm.getGenres().stream()
                     .map(Genre::getId)
                     .map(genreStorage::findById)
-                    .map(Genre::getId)
                     .collect(Collectors.toSet());
             film.setGenres(genres);
         }
@@ -57,7 +57,7 @@ public class FilmService {
     public Collection<FilmDto> findAll() {
         return filmStorage.findAll()
                 .stream()
-                .map(FilmMapper::mapToDto)
+                .map(filmMapper::map)
                 .peek(film -> {
                     List<Genre> genres = getGenresByFilmId(film.getId());
                     film.setGenres(genres);
@@ -71,12 +71,12 @@ public class FilmService {
 
     public FilmDto findById(Long filmId) {
         Film film = filmStorage.findById(filmId);
-        FilmDto filmDto = FilmMapper.mapToDto(film);
+        FilmDto filmDto = filmMapper.map(film);
         List<Genre> genres = getGenresByFilmId(filmId);
         filmDto.setGenres(genres);
 
-        if (filmDto.getMpa() != null) {
-            Rating mpa = ratingService.findById(filmDto.getMpa().getId());
+        if (film.getMpaId() != null) {
+            Rating mpa = ratingService.findById(film.getMpaId());
             filmDto.setMpa(mpa);
         }
         return filmDto;
@@ -104,14 +104,13 @@ public class FilmService {
             targetFilm.setMpaId(mpa.getId());
         }
         if (updFilm.getGenres() != null) {
-            Set<Long> genres = updFilm.getGenres().stream()
+            Set<Genre> genres = updFilm.getGenres().stream()
                     .map(Genre::getId)
                     .map(genreStorage::findById)
-                    .map(Genre::getId)
                     .collect(Collectors.toSet());
             targetFilm.setGenres(genres);
         }
-        return FilmMapper.mapToDto(update(targetFilm));
+        return filmMapper.map(update(targetFilm));
     }
 
     public Film update(Film film) {
@@ -141,7 +140,7 @@ public class FilmService {
                 .stream()
                 .sorted(popularComparator.reversed())
                 .limit(count)
-                .map(FilmMapper::mapToDto)
+                .map(filmMapper::map)
                 .peek(dto -> dto.setGenres(getGenresByFilmId(dto.getId())))
                 .toList();
     }

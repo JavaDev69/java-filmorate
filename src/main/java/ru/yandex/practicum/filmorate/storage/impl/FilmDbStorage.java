@@ -5,6 +5,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exception.NotFoundByIdException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 
 import java.sql.Timestamp;
@@ -101,8 +102,11 @@ public class FilmDbStorage extends BaseRepository<Film> implements FilmStorage {
         delete(DELETE_GENRES_BY_FILM_ID_QUERY, filmId);
     }
 
-    private void addGenreToFilm(long filmId, Set<Long> genres) {
-        genres.forEach(genreId -> update(ADD_GENRES_TO_FILM_QUERY, filmId, genreId));
+    private void addGenreToFilm(long filmId, Set<Genre> genres) {
+        genres
+                .stream()
+                .map(Genre::getId)
+                .forEach(genreId -> update(ADD_GENRES_TO_FILM_QUERY, filmId, genreId));
     }
 
     private void deleteLikesByFilmId(long filmId) {
